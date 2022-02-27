@@ -1,0 +1,8 @@
+wand
+tqdm
+nltk
+pillow
+typer
+imgkit
+requests
+torch

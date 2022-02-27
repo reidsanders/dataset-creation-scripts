@@ -15,17 +15,18 @@ import re
 import base64
 from torch.utils.data.dataset import random_split
 import os
+from tqdm import tqdm
 
 app = typer.Typer()
 
 @app.command()
-def save_emoji(indexfile: str, outdir: str = "emoji-senses/", size: int = 256, maxexamples: int = 9999999999999999999, overwrite: bool = False):
+def save_emoji(indexfile: str, outdir: str = "emoji-senses/", size: int = 256, maxexamples: int = 1e20, overwrite: bool = False):
     if not os.path.exists(outdir):
         os.makedirs(outdir)
     info = []
     with open(indexfile, "r") as f:
         data = json.loads(f.read())
-    for i,emoji in enumerate(data):
+    for i,emoji in tqdm(enumerate(data), total=len(data)):
         try:
             urlmatches, imgtaglist = to_png(emoji)
             for i,(urlmatch,imgtag) in enumerate(zip(urlmatches,imgtaglist)):
@@ -48,7 +49,6 @@ def save_emoji(indexfile: str, outdir: str = "emoji-senses/", size: int = 256, m
                     continue
 
                 response = requests.get(urlmatch, stream=True)
-                print(f"IMG_TAG: {imgtag}")
                 if response.status_code == 200:
                     with open(outfile, 'wb') as f:
                         img = Image.open(response.raw)
@@ -100,7 +100,6 @@ def save_emoji(indexfile: str, outdir: str = "emoji-senses/", size: int = 256, m
 
 def to_png(emoji, version=0):
     url = re.findall(r'http://.*/', emoji["definition"])[-1]
-    print(f"URL: {url}")
     data = requests.get(url).text
     html_search_string = r"<img.*alt=\".*{}.*height=\"120\"\>"  # Hacky height check to prevent smaller thumbnails being picked
     matchlist = re.findall(html_search_string.format(emoji["name"]), data, flags=re.IGNORECASE)
